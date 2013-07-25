@@ -51,7 +51,10 @@ module Devise
         if self.encrypted_password_changed?
           if self.class.password_archiving_count.to_i > 0
             self.old_passwords.create! old_password_params
-            self.old_passwords.order(:id).reverse_order.offset(self.class.password_archiving_count).destroy_all
+            o = self.old_passwords.order(:id).reverse_order # .offset(self.class.password_archiving_count).destroy_all
+            (self.class.password_archiving_count - 1).upto(o.size - 1) do |i|
+              o[i].destroy
+            end  
           else
             self.old_passwords.destroy_all
           end
@@ -62,7 +65,7 @@ module Devise
         salt_change = if self.respond_to?(:password_salt_change) and not self.password_salt_change.nil?
           self.password_salt_change.first
         end
-        { :encrypted_password => self.encrypted_password_change.first, :password_salt => salt_change }
+        { :encrypted_password => self.encrypted_password_change.first, :password_salt => salt_change }.permit!
       end
 
       module ClassMethods
